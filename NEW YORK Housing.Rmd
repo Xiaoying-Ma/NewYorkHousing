@@ -1,0 +1,524 @@
+---
+title: "Exploring the New York Housing Market: A Dashboard Case Study"
+author: "Xiaoying Ma"
+date: "06/23/2026"
+output: 
+  html_document: 
+    theme: yeti
+    toc: yes
+    toc_depth: 4
+    toc_float: yes
+    number_sections: yes
+    toc_collapsed: yes
+    code_folding: hide
+    code_download: yes
+    smooth_scroll: yes
+    highlight: tango
+---
+
+
+
+```{css echo = FALSE}
+/* ============ CSS Styling for Lecture Notes ============ */
+
+body {
+  font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, sans-serif;
+  line-height: 1.7;
+  color: #2d1b29;
+  background-color: #fdfafd;
+}
+
+#TOC::before {
+  content: "Table of Contents";
+  font-weight: bold;
+  font-size: 1.2em;
+  display: block;
+  color: navy;
+  margin-bottom: 10px;
+}
+
+
+div#TOC li {     /* table of content  */
+    list-style:upper-roman;
+    background-image:none;
+    background-repeat:none;
+    background-position:0;
+    /*font-weight: bold; */
+    font-size: 1.1em;
+    font-weight: 500;
+    color: #6E3061;
+}
+
+
+h1.title {
+  font-size: 26px;
+  color: #6E3061;
+  text-align: left;
+}
+
+h4.author { /* Header 4 - and the author and data headers use this too  */
+  font-size: 18px;
+  /*font-family: "Times New Roman", Times, serif;*/
+  color: #6E3061;
+  text-align: left;
+}
+h4.date { /* Header 4 - and the author and data headers use this too  */
+  font-size: 18px;
+  /*font-family: "Times New Roman", Times, serif;*/
+  color: #6E3061;
+  text-align: left;
+}
+
+
+h1 {
+  color: #6E3061;
+  border-bottom: 3px solid #6E3061;
+  padding-bottom: 8px;
+  margin-top: 40px;
+  font-weight: bold;
+  font-size: 2.2rem;
+}
+
+h2 {
+  color: #6E3061;
+  border-left: 5px solid #6E3061;
+  padding-left: 12px;
+  margin-top: 30px;
+  font-weight: bold;
+  font-size: 1.8rem;
+}
+
+h3 {
+  color: #8b4a7d;
+  margin-top: 24px;
+  font-weight: bold;
+  font-size: 1.8m;
+}
+
+h4 {
+  color: #a05f92;
+  margin-top: 18px;
+  font-weight: bold;
+  font-size: 1.4rem;
+}
+
+code {
+  background-color: #f4edf3;
+  color: #4a2040;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: 'Fira Code', 'JetBrains Mono', 'Consolas', monospace;
+  font-size: 0.9em;
+  border: 1px solid #d4c0d1;
+}
+
+pre {
+  background-color: #f9f5f9;
+  border: 1px solid #d4c0d1;
+  border-left: 4px solid #6E3061;
+  border-radius: 6px;
+  padding: 14px;
+}
+
+pre code {
+  background-color: transparent;
+  border: none;
+  padding: 0;
+}
+
+blockquote {
+  background-color: #f4edf3;
+  border-left: 4px solid #6E3061;
+  padding: 12px 18px;
+  margin: 16px 0;
+  border-radius: 0 6px 6px 0;
+  color: #4a2040;
+}
+
+.note-box {
+  background-color: #f0e6ee;
+  border: 1px solid #c49bb8;
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin: 18px 0;
+}
+
+.note-box strong {
+  color: #6E3061;
+}
+
+.tip-box {
+  background-color: #e8f5e9;
+  border: 1px solid #81c784;
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin: 18px 0;
+}
+
+.tip-box strong {
+  color: #2e7d32;
+}
+
+.warning-box {
+  background-color: #fff3e0;
+  border: 1px solid #ffb74d;
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin: 18px 0;
+}
+
+.warning-box strong {
+  color: #e65100;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 16px 0;
+}
+
+table th {
+  background-color: #6E3061;
+  color: white;
+  padding: 10px 12px;
+  text-align: left;
+  font-weight: 600;
+}
+
+table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid #d4c0d1;
+}
+
+table tr:nth-child(even) td {
+  background-color: #faf5f9;
+}
+
+table tr:hover td {
+  background-color: #f0e6ee;
+}
+
+.toc {
+  background-color: #faf5f9;
+  border: 1px solid #d4c0d1;
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin-bottom: 24px;
+}
+
+.figure {
+  border: 1px solid #e0d1db;
+  border-radius: 8px;
+  padding: 8px;
+  margin: 16px 0;
+  box-shadow: 0 2px 8px rgba(110, 48, 97, 0.08);
+}
+```
+
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,       
+                      warning = FALSE,   
+                      result = TRUE,   
+                      message = FALSE,
+                      comment = NA)
+```
+
+\
+
+
+# Introduction
+
+This assignment focuses on building interactive dashboards and story points using Tableau Public. The goal is to help users explore a New York housing data set and better understand patterns in housing prices across different locations, property types, and property characteristics. The data set contains listing-level information such as broker titles, house types, prices, bedrooms, bathrooms, property square footage, addresses, administrative and local areas, street names, and geographic coordinates.
+
+The dashboard is designed to support visual exploration of housing market patterns in New York, with particular attention to location, price variation, property type, and housing size.
+
+
+|   Variable Name    |  Description    |
+|:-----------------------|:----------------------------------------------------|
+|   BROKERTITLE    |	    Title of the broker    |
+|   TYPE   |   Type of the house|
+|   PRICE    |  Price of the house |
+|   BEDS   |    Number of bedrooms |
+|   BATH    |	Number of bathrooms   |
+|   PROPERTYSQFT    |     Square footage of the property  |
+|   ADDRESS    |               Full address of the house    |
+|   STATE    |            State of the house  |
+|   MAIN_ADDRESS   |		 Main address information   |
+|   ADMINISTRATIVE_AREA_LEVEL_2   | Administrative area level 2 information    |  
+|   LOCALITY   |   Locality information  |
+|   SUBLOCALITY  | 	 Sublocality information   |
+|  STREET_NAME    |	     Street name    |
+|  LONG_NAME    |           Long name   |
+|   FORMATTED_ADDRESS   |          Formatted address   |
+|   LATITUDE   |           Latitude coordinate of the house   |
+|   LONGITUDE   |          Longitude coordinate of the house|
+
+
+
+# Data Story and Prototyping
+
+## Data Story Formulation 
+
+**Goal**: Help users explore New York housing listings to understand how housing prices vary across neighborhoods, property types, and property size.
+
+
+**Data Story** is based on the following 4 questions:
+
+* **Q1**: Where are housing listings located across New York, and which areas appear to have relatively higher prices?
+* **Q2**: Which sublocalities have the highest average housing prices?
+* **Q3**: How does the distribution of housing prices differ across property types?
+* **Q4**: What is the relationship between property size and housing price?
+
+
+## Dashboard Prototyping
+
+**Individual Carts Corresponding to Questions**
+
+* **Chart Q1** - New York Housing Listings Map – Geographic distribution of listings:
+  + **Visual**: Interactive map showing housing listings across New York using latitude and longitude.
+   + **Encoding**:Each point represents a listing; color indicates relative price level.
+  + **Interactivity**: Hover reveals listing details such as address, price, beds, baths, property size, and sublocality.
+  + **Why start here**: Provides an immediate spatial overview of the housing market and highlights areas with relatively higher and lower prices.
+
+* **Chart Q2** -Top 10 Average Prices by SubLocality – Ranked Bar Chart:
+  + **Visual**: Horizontal bar chart showing the top 10 sublocalities with the highest average housing prices.
+  + **Interactivity**: Hover displays exact average prices; users can visually compare neighborhood-level price differences.
+  + **Insight example**:Some sublocalities, such as Dumbo or Manhattan, may show substantially higher average listing prices than others.
+
+* **Chart Q3** - Property Type Price Distribution – Box Plot:
+  + **Visual**:Box plots of log-transformed housing prices across major property types.
+  + **Axes**: X = property type, Y = log price.
+  + **Interactivity**:Hover can reveal summary information for each category.
+  + **Why useful**: Shows variation in pricing across property types and highlights differences in medians, spread, and outliers.
+
+* **Chart Q4** - Property Size vs. Price – Scatter Plot:
+  + **Visual**: Scatter plot of property square footage against log-transformed housing price, colored by property type.
+  + **Axes**: X = property square footage, Y = log price.
+  + **Interactivity**: Hover displays listing-level details; filtering by type or beds helps users focus on specific market segments.
+  + **Insight example**: Larger properties generally tend to have higher prices, although substantial variation remains across property types.
+  
+  
+**Interconnection Flow - How charts talk to each other**
+
+|   Action   |	Effect   |
+|:-----------------|:-----------------------------|
+|   Select listings on the map	|   Other charts can be interpreted in the context of the selected geographic region|   
+|   Focus on a high-price sublocality in chart 2	|   Users can compare that neighborhood with the broader market shown in the map and scatter plot|   
+|   Examine a property type in chart 3|   Users can compare its price distribution with its pattern in the scatter plot|   
+|   Filter by property type or beds in chart 4	|  The dashboard narrows attention to specific housing segments|   
+
+
+**Dashboard Layout**
+
+```{}
++------------------------------------------------+
+|  Title: New York Housing Market Dashboard      |
++------------------------------------------------+
+|  [Chart Q1]           |  [Chart Q2]            |
+| Housing Listings Map  |  Top 10 Avg. Prices    |
+|                       |  by SubLocality        |
++--------------------+---------------------------+
+|  [Chart Q3]           |  [Chart Q4]            | 
+|Log Price Distribution |  Log Price vs.         | 
+|by Property Type       |  Property Size         |                                
++------------------------------------------------+
+|  Price legend / notes / optional filters       |
++------------------------------------------------+
+```
+
+
+# Tableau Implementation - Step-by-step Procedure
+
+**📥 Data Preparation**
+
+* **Download/Prepare data** (New York housing dataset)
+
+* **Open Tableau Public** → Connect → Text/Excel → Select your file
+
+*	**Create a new worksheet** for each chart in the dashboard
+
+* **Check variable types:** `PRICE`, `BEDS`, `BATH`, `PROPERTYSQFT`, `LATITUDE`, and `LONGITUDE` should be numeric.`TYPE`, `LOCALITY`, `SUBLOCALITY`, `ADDRESS`, and `FORMATTED_ADDRESS` should be dimensions.
+
+* **Create calculated field** with name **Log Price**:LOG([PRICE])
+
+* **Optional cleaning/filtering for property type:**
+Keep the main property categories, such as:
+House for sale
+Condo for sale
+Co-op for sale
+Townhouse for sale
+Multi-family home for sale
+
+* **Set geographic roles:**
+Right-click LATITUDE → Geographic Role → Latitude
+Right-click LONGITUDE → Geographic Role → Longitude
+
+
+**🗺️ Chart Q1 – New York Housing Listings Map**
+
+
+| Step	| Action               |     where in UI?  |
+|:------|:-----------------------|:-------------------------------|
+| 1	|	Create a new worksheet → name it `1_Housing_Map`|  Worksheet tab  |
+| 2	|	Drag `LONGITUDE` to **Columns** |  Columns shelf |
+| 3	|	Drag `LATITUDE` to **Rows** | Rows shelf|
+| 4 | Change Mark type to **Circle** | 	Marks card dropdown |
+| 5 | Drag `ADDRESS`  to **Detail** |  Marks card |    
+| 6 | Drag `Log Price` to **Color** 	|  Marks card |       
+| 7 | Adjust **Opacity** |Color → Opacity |       
+| 8 | Add tooltip fields: `PRICE`, `TYPE`, `BEDS`, `BATH`,`PROPERTYSQFT`, `SUBLOCALITY`|	Tooltip |
+| 9 | Edit map title to `New York Housing Listings Map`	| Title|
+
+
+
+<font size = 2.3>**Note**: Blue may be used to indicate higher prices and orange to indicate lower prices if a diverging palette is selected..</font>
+
+\
+
+
+**📊 Chart Q2 – Top 10 Average Prices by SubLocality (Bar Chart)**
+
+| Step | Action |
+|:----|:-----------------------------------------------|
+| 1 | Create a new worksheet → name it `2_Top10_SubLocality` |
+| 2 | Drag `SUBLOCALITY` to **Rows**|
+| 3 |Drag `PRICE` to **Columns** |
+| 4 | Change aggregation from `SUM` to **AVG**|
+| 5 | Sort bars from largest to smallest |
+| 6 | Drag `AVG(PRICE)` to Color |
+| 7 | Filter `SUBLOCALITY` to **Top 10 by AVG(PRICE)**|
+| 8 | Add labels|
+| 9 | Format axis as **Currency** |
+| 10 |Edit title to `Top 10 Average Prices by SubLocality` |
+
+
+
+\
+
+**📦 Chart 3 – Log Price Distribution by Property Type (Box Plot)**
+
+| Step | Action |
+|:------|:-----------------------------------|
+| 1 | Create a new worksheet → name it `3_Type_BoxPlot` |
+| 2 | Drag `TYPE` to Columns|
+| 3 | Drag `Log Price` to Rows |
+| 4 | Go to **Show Me** → choose **Box-and-Whisker Plot**|
+| 5 | Go to Analysis and uncheck **Aggregate Measures** |
+| 6 | Drag TYPE to **Color**|
+| 7 | Add tooltip fields such as `AVG(PRICE)`, `AVG(PROPERTYSQFT)`, `AVG(BEDS)`, and `AVG(BATH)` |
+| 8 | Edit title to `Log Price Distribution by Property Type` |
+
+
+
+**📉 Chart 4 – Log Price vs. Property Size (Scatter Plot)**
+
+| Step | Action |
+|:-----|:----------------------------------------------|
+| 1 | Create a new worksheet → name it `4_Size_Price_Scatter` |
+| 2 | Drag `PROPERTYSQFT` to **Columns**|
+| 3 | Drag `Log Price` to **Rows** |
+| 4 | Change Mark type to **Circle** |
+| 5 | Drag `TYPE` to **Color** |
+| 6 | Drag `ADDRESS` or `FORMATTED_ADDRESS` to **Detail** |
+| 7 | Adjust opacity to around 50%–70% for overlapping points |
+| 8 | Add tooltip fields: `PRICE`, `TYPE`, `BEDS`, `BATH`, `PROPERTYSQFT`, `SUBLOCALITY` |
+| 9 |edit axis ranges to zoom into the main data region |
+| 10 |Edit title to `Log Price vs. Property Size` |
+
+
+
+# Dashboard Assembly 
+
+
+| Step | Action |
+|:------|:-------------------------|
+|   | **Create Dashboard** |
+| 1 | Click New Dashboard → name `New York Housing Market Dashboard` |
+| 2 | Set dashboard size: Desktop → 1000 x 800 (or Automatic) |
+| | **Add Sheets to Dashboard** |
+| 3 | Add a title: `New York Housing Market Dashboard` |
+| 4 | Drag `New York Housing Listings Map` → top-left |
+| 5 | Drag `Top 10 Average Prices by SubLocality` → top-right |
+| 6 | Drag `Log Price Distribution by Property Type` → Bottom-left |
+| 7 | Drag `Log Price vs. Property Size` → Bottom-right |
+| 8 | Publish it to Tableau Public|
+
+
+\
+
+## Dashboard Interactivity
+
+
+| Action| Effect|
+|:----|:-----|
+| Hover over points in the map | Explore the scatter plot in chart 4 |
+| View top-priced sublocalities in chart 2 |Compare neighborhood-level price differences |
+| Compare property types in chart 3 | Examine differences in price distribution by type |
+| Explore the scatter plot in chart 4 | Observe the relationship between size and log-transformed price|
+
+
+
+## Interactive Tableau Dashboard
+
+```{=html}
+<table style="width: 120%;">
+  <tr>
+    <td>
+      <div class='tableauPlaceholder' id='vizNYHousing' style='position: relative'>
+        <noscript>
+          <a href='#'>
+            <img alt='New York Housing Market Dashboard'
+                 src='https://public.tableau.com/static/images/Ne/Newyorkhousing/Dashboard1/1.png'
+                 style='border: none' />
+          </a>
+        </noscript>
+
+        <object class='tableauViz' style='display:none;'>
+          <param name='host_url' value='https%3A%2F%2Fpublic.tableau.com%2F' />
+          <param name='embed_code_version' value='3' />
+          <param name='site_root' value='' />
+          <param name='name' value='Newyorkhousing/Dashboard1?:language=en-US&:display_count=n&:origin=viz_share_link' />
+          <param name='toolbar' value='yes' />
+          <param name='static_image' value='https://public.tableau.com/static/images/Ne/Newyorkhousing/Dashboard1/1.png' />
+          <param name='animate_transition' value='yes' />
+          <param name='display_static_image' value='yes' />
+          <param name='display_spinner' value='yes' />
+          <param name='display_overlay' value='yes' />
+          <param name='display_count' value='yes' />
+          <param name='language' value='en-US' />
+        </object>
+      </div>
+
+      <script type='text/javascript'>
+        var divElement = document.getElementById('vizNYHousing');
+        var vizElement = divElement.getElementsByTagName('object')[0];
+        vizElement.style.width = '100%';
+        vizElement.style.height = (divElement.offsetWidth * 0.75) + 'px';
+        var scriptElement = document.createElement('script');
+        scriptElement.src = 'https://public.tableau.com/javascripts/api/viz_v1.js';
+        vizElement.parentNode.insertBefore(scriptElement, vizElement);
+      </script>
+    </td>
+  </tr>
+</table>
+```
+
+
+
+[View the interactive New York Housing Market Dashboard on Tableau Public](https://public.tableau.com/views/Newyorkhousing/Dashboard1?:language=en-US&:sid=&:redirect=auth&:display_count=n&:origin=viz_share_link)
+
+\
+
+**Remarks**: Two Important Remarks for Embedding a Published Dashboard into an R Markdown Document
+
+* **Use a single-cell HTML table for embedding**: It is recommended to create a single-cell HTML table and place the dashboard embedding code inside that cell. This approach makes it easier to control the alignment and positioning of the dashboard within the report.
+
+* **Clean the copied embedding code before use**: To avoid embedding errors, the code copied from the published dashboard should be cleaned and reformatted as shown below. This ensures that the dashboard is displayed correctly in the R Markdown document.
+
+\
+
+In summary, by integrating both numerical and categorical variables, the dashboard allows users to explore the New York housing market from multiple perspectives. The visualizations include a geographic listing map, a ranked bar chart of average prices by sublocality, a box plot of log-transformed prices by property type, and a scatter plot of property size versus log-transformed price. Through interactive exploration, users can examine how location, neighborhood, property type, and housing size are associated with listing prices.
+
+
